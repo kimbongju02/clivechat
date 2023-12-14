@@ -28,6 +28,7 @@ vector<Client> clients;
 
 void handleNewConnection(int);
 void handleClientData(int, int);
+void send_file(int, auto);
 
 // 새로운 클라이언트가 서버에 연결되면 호출
 void handleNewConnection(int epoll_fd) {
@@ -106,42 +107,7 @@ void handleClientData(int clientSocket, int epoll_fd) {
             }
         } else {
             if (memcmp(buffer, "FILE", 4) == 0) {
-                char buf[buffer_size];
-                char filename[buffer_size];
-                char char_filesize[buffer_size];
-                int filesize, fpsize;
-
-                recv(clientSocket, filename, buffer_size, 0);
-                recv(clientSocket, char_filesize, buffer_size, 0);
-                filesize = stoi(char_filesize);
-
-                string path = "./server_folder/" + string(filename);  // 경로 구분자 추가
-                FILE* file = fopen(path.c_str(), "wb");
-                int nbyte = 0;
-                
-                string send_message = "\nsend file name : " + string(filename) + "\tuser : " +client->username;
-                for (const auto& c : clients) {
-                    // 같은 채팅방에 속한 클라이언트에게만 메시지 전송
-                        if (c.room == client->room) {
-                            int get_socket = c.socket;
-                            send(get_socket, send_message.c_str(), buffer_size, 0);
-                            send(get_socket, "FILE", buffer_size, 0);
-                            send(get_socket, filename, buffer_size, 0);
-                            send(get_socket, char_filesize, buffer_size, 0);
-                        }
-                    }
-                while (nbyte!=filesize) {
-                    fpsize = recv(clientSocket, buf, buffer_size, 0);
-                    nbyte += fpsize;
-                    for (const auto& c : clients) {
-                    // 같은 채팅방에 속한 클라이언트에게만 메시지 전송
-                        if (c.room == client->room) {
-                            int get_socket = c.socket;
-                            send(get_socket, buf, fpsize, 0);
-                        }
-                    }
-                    memset(buf, 0, buffer_size);
-                }
+                send_file(clientSocket, client);
             } else {
                 // 채팅 메시지 브로드캐스트
                 message = "[" + client->room + "] " + client->username + ": " + message;
@@ -154,6 +120,45 @@ void handleClientData(int clientSocket, int epoll_fd) {
                 }
             }
         }
+    }
+}
+
+void send_file(int clientSocket, auto client){
+    char buf[buffer_size];
+    char filename[buffer_size];
+    char char_filesize[buffer_size];
+    int filesize, fpsize;
+
+    recv(clientSocket, filename, buffer_size, 0);
+    recv(clientSocket, char_filesize, buffer_size, 0);
+    filesize = stoi(char_filesize);
+
+    string path = "./server_folder/" + string(filename);  // 경로 구분자 추가
+    FILE* file = fopen(path.c_str(), "wb");
+    int nbyte = 0;
+    
+    string send_message = "\nsend file name : " + string(filename) + "\tuser : " +client->username;
+    for (const auto& c : clients) {
+        // 같은 채팅방에 속한 클라이언트에게만 메시지 전송
+            if (c.room == client->room) {
+                int get_socket = c.socket;
+                send(get_socket, send_message.c_str(), buffer_size, 0);
+                send(get_socket, "FILE", buffer_size, 0);
+                send(get_socket, filename, buffer_size, 0);
+                send(get_socket, char_filesize, buffer_size, 0);
+            }
+        }
+    while (nbyte!=filesize) {
+        fpsize = recv(clientSocket, buf, buffer_size, 0);
+        nbyte += fpsize;
+        for (const auto& c : clients) {
+        // 같은 채팅방에 속한 클라이언트에게만 메시지 전송
+            if (c.room == client->room) {
+                int get_socket = c.socket;
+                send(get_socket, buf, fpsize, 0);
+            }
+        }
+        memset(buf, 0, buffer_size);
     }
 }
 

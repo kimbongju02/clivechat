@@ -1,0 +1,18 @@
+#include <iostream>
+#include <string>
+
+int main() {
+    // std::string 
+    std::string myString = "Hello, World!";
+
+    // std::string const char*
+    const char* charPointer = myString.c_str();
+
+    // const char char[]
+    char charArray[myString.size() + 1]; // +1
+
+    // 
+    std::cout << "Converted char[]: " << charArray << std::endl;
+
+    return 0;
+}

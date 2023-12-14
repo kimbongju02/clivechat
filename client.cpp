@@ -12,7 +12,7 @@
 
 using namespace std;
 
-constexpr int PORT = 8081;
+constexpr int PORT = 8080;
 constexpr int buffer_size = 256;
 string filename, file_path;
 FILE *file = NULL;
@@ -78,29 +78,7 @@ public:
             bytesRead = recv(clientSocket, buffer, buffer_size, 0);
 
             if (memcmp(buffer, "FILE", 4) == 0) {
-                char buf[buffer_size];
-                char filename[buffer_size];
-                char char_filesize[buffer_size];
-                int filesize, fpsize;
-
-                recv(clientSocket, filename, buffer_size, 0);
-                recv(clientSocket, char_filesize, buffer_size, 0);
-                filesize = stoi(char_filesize);
-
-                string folder_path = "./"+user_name+"/";
-                string path = folder_path + string(filename);  // 경로 구분자 추가
-                mkdir(folder_path.c_str(), 0777);
-                FILE* file = fopen(path.c_str(), "wb");
-
-                int nbyte = 0;
-                while (nbyte!=filesize) {
-                    fpsize = recv(clientSocket, buf, buffer_size, 0);
-                    nbyte += fpsize;
-                    fwrite(buf, 1, fpsize, file);
-                    cout<<buf<<endl;
-                    memset(buf, 0, buffer_size);
-                }
-                fclose(file);
+               get_file();
             }else{
                 if (bytesRead == -1) {
                     // 오류 처리
@@ -122,6 +100,31 @@ public:
                 }
             }
         }
+    }
+
+    void get_file(){
+        char buf[buffer_size];
+        char filename[buffer_size];
+        char char_filesize[buffer_size];
+        int filesize, fpsize;
+
+        recv(clientSocket, filename, buffer_size, 0);
+        recv(clientSocket, char_filesize, buffer_size, 0);
+        filesize = stoi(char_filesize);
+
+        string folder_path = "./"+user_name+"/";
+        string path = folder_path + string(filename);  // 경로 구분자 추가
+        mkdir(folder_path.c_str(), 0777);
+        FILE* file = fopen(path.c_str(), "wb");
+
+        int nbyte = 0;
+        while (nbyte!=filesize) {
+            fpsize = recv(clientSocket, buf, buffer_size, 0);
+            nbyte += fpsize;
+            fwrite(buf, 1, fpsize, file);
+            memset(buf, 0, buffer_size);
+        }
+        fclose(file);
     }
 
     void room_access() {
